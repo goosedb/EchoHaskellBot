@@ -1,4 +1,6 @@
 resolver: lts-13.13
-packages:
+packages: 
 - .
-
+extra-deps:
+- req-2.0.1
+- retry-0.8.0.0

@@ -4,28 +4,27 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: b3aebe62a86bf5985908d50ee6e1aa023eea214b058a1c1b3d69a8c266c59619
+-- hash: 5cdb524651ec3317e74b224d9ff1e6b4603243fee4772361c01659c298e900ad
 
 name:           EchoBot
 version:        0.1.0.0
-homepage:       https://github.com/GooseDB/EchoBot#readme
-bug-reports:    https://github.com/GooseDB/EchoBot/issues
+homepage:       https://github.com/GooseDB/EchoHaskellBot#readme
+bug-reports:    https://github.com/GooseDB/EchoHaskellBot/issues
 author:         GooseDB
 maintainer:     GooseDB@yandex.com
 license:        BSD3
-license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
     README.md
-    ChangeLog.md
 
 source-repository head
   type: git
-  location: https://github.com/GooseDB/EchoBot
+  location: https://github.com/GooseDB/EchoHaskellBot
 
 executable EchoBot-exe
   main-is: Main.hs
   other-modules:
+      Config
       Paths_EchoBot
   hs-source-dirs:
       src
@@ -33,7 +32,10 @@ executable EchoBot-exe
   build-depends:
       aeson
     , base >=4.7 && <5
-    , req
+    , bytestring
+    , http-client
+    , req >=2.0.1
+    , text
   default-language: Haskell2010
 
 test-suite EchoBot-test
@@ -47,5 +49,8 @@ test-suite EchoBot-test
   build-depends:
       aeson
     , base >=4.7 && <5
-    , req
+    , bytestring
+    , http-client
+    , req >=2.0.1
+    , text
   default-language: Haskell2010

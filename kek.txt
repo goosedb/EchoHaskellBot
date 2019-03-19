@@ -1,0 +1,28 @@
+{
+    "ok":true,
+    "result": [
+        {
+            "update_id":690442546,
+            "message": {
+                "message_id":21,
+                "from": {
+                    "id":242631754,
+                    "is_bot":false,
+                    "first_name":"Danil",
+                    "last_name":"Berestov",
+                    "username":"GooseDB",
+                    "language_code":"ru"
+                },
+                "chat": {
+                    "id":242631754,
+                    "first_name":"Danil",
+                    "last_name":"Berestov",
+                    "username":"GooseDB",
+                    "type":"private"
+                },
+                "date": 1552995022,
+                "text": "agfafa"
+            }
+        }
+    ]
+}

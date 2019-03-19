@@ -1,18 +1,20 @@
 name:                EchoBot
 version:             0.1.0.0
-github:              "GooseDB/EchoBot"
+github:              "GooseDB/EchoHaskellBot"
 license:             BSD3
 author:              "GooseDB"
 maintainer:          "GooseDB@yandex.com"
 
 extra-source-files:
 - README.md
-- ChangeLog.md
 
 dependencies:
 - base >= 4.7 && < 5
-- req
+- req >= 2.0.1
 - aeson
+- text
+- http-client
+- bytestring
 
 
 executables:
