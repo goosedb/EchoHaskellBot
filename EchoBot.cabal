@@ -1,0 +1,47 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.31.1.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: c07c96e868b6bd7b2a4a76fb31bcf3c12cf3daf79495c625a8971dc9f2f7e3fd
+
+name:           EchoBot
+version:        0.1.0.0
+homepage:       https://github.com/GooseDB/EchoBot#readme
+bug-reports:    https://github.com/GooseDB/EchoBot/issues
+author:         GooseDB
+maintainer:     GooseDB@yandex.com
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+    ChangeLog.md
+
+source-repository head
+  type: git
+  location: https://github.com/GooseDB/EchoBot
+
+executable EchoBot-exe
+  main-is: Main.hs
+  other-modules:
+      Paths_EchoBot
+  hs-source-dirs:
+      src
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+  default-language: Haskell2010
+
+test-suite EchoBot-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Paths_EchoBot
+  hs-source-dirs:
+      test
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+  default-language: Haskell2010
