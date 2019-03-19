@@ -4,10 +4,7 @@
 module Config where
 
 import           Data.Aeson
-import qualified Data.ByteString as B
-import qualified Data.ByteString.Lazy as L
 import           Data.Text as T
-import           Data.Text.Encoding
 import           GHC.Generics
 import           Data.Aeson.Casing
 
@@ -48,7 +45,5 @@ instance FromJSON Config where
 instance ToJSON Config where
   toJSON = genericToJSON $ aesonDrop 0 $ snakeCase
 
-loadConfig :: FilePath -> IO (Maybe Config)
-loadConfig path = do
-  cfg <- L.readFile path
-  return $ decode cfg 
+loadConfig :: FilePath -> IO (Either String Config)
+loadConfig = eitherDecodeFileStrict 
