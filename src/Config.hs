@@ -7,6 +7,7 @@ import           Data.Aeson
 import           Data.Aeson.Casing
 import           Data.Text
 import           GHC.Generics
+import           Logger
 
 data Proxy = Proxy
   { host :: !Text
@@ -16,16 +17,6 @@ data Proxy = Proxy
 instance FromJSON Proxy
 
 instance ToJSON Proxy
-
-data LogLevel
-  = Debug
-  | Warnings
-  | Info
-  deriving (Show, Generic)
-
-instance FromJSON LogLevel
-
-instance ToJSON LogLevel
 
 data Service
   = Telegram
