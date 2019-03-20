@@ -27,21 +27,21 @@ data LogLevel
 instance Show LogLevel where
   show Debug    = "[DEBUG]: "
   show Warnings = "[WARNING]: "
-  show Errors     = "[ERROR]: "
+  show Errors   = "[ERROR]: "
 
 instance FromJSON LogLevel
 
 instance ToJSON LogLevel
 
 createLogger :: String -> LogLevel -> Logger
-createLogger out loggerLevel = Logger logger (stream out)
+createLogger out loggerLevel = Logger logger stream
   where
-    logger logLevel message =
-      if logLevel >= loggerLevel
-        then show logLevel ++ message ++ "\n"
-        else []
-    stream "STDOUT" = Stdout
-    stream _        = File out
+    logger logLevel message
+      | logLevel >= loggerLevel = show logLevel ++ message ++ "\n"
+      | otherwise = []
+    stream
+      | out == "STDOUT" = Stdout
+      | otherwise = File out
 
 writeLog :: Logger -> LogLevel -> String -> IO ()
 writeLog (Logger lgr (File path)) lvl msg = appendFile path $ lgr lvl msg
