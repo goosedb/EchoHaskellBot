@@ -8,16 +8,16 @@ import           Data.Aeson.Casing
 import           Data.Text
 import           GHC.Generics
 import           Logger
-import           Proxy
+import           Service
 
-data Service
-  = Telegram
-  | Slack
-  deriving (Show, Generic)
+data Proxy = Proxy
+  { host :: !Text
+  , port :: !Int
+  } deriving (Show, Generic)
 
-instance FromJSON Service
+instance FromJSON Proxy
 
-instance ToJSON Service
+instance ToJSON Proxy
 
 data Config = Config
   { token         :: !Text

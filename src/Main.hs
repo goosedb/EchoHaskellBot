@@ -7,6 +7,7 @@ import           Data.Text
 import           Logger
 import           State
 import           System.Environment
+import Telegram as T
 
 main :: IO ()
 main = getArgs >>= processArgs >>= runMainLoop
@@ -20,10 +21,8 @@ runMainLoop (Left msg) = putStrLn msg
 runMainLoop (Right config) = logger >>= run
   where
     logger = initLogger (unpack $ logStream config) (logLevel config)
-    run (Right logger) = mainLoop $ stateFromConfig logger config
+    run (Right logger) = T.run $ stateFromConfig logger config
     run (Left a)       = runMainLoop $ Left a
 
-mainLoop :: State -> IO ()
-mainLoop state = undefined
 
 help = "Ы?)"
