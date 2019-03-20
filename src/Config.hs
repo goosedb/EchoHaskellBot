@@ -34,6 +34,7 @@ data Config = Config
   , service       :: !Service
   , helpMessage   :: !Text
   , repeatsNumber :: !Int
+  , logStream     :: Text
   } deriving (Show, Generic)
 
 instance FromJSON Config where
