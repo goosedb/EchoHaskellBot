@@ -1,22 +1,21 @@
 {-# LANGUAGE DeriveGeneric #-}
 
 module Logger
-  ( createLogger
+  ( initLogger
   , writeLog
   , LogLevel
+  , Logger
   ) where
 
+import           Control.Exception
 import           Data.Aeson
 import           GHC.Generics
-import           Prelude      hiding (log)
+import           Prelude           hiding (log)
+import           System.IO
 
 data Logger =
   Logger (LogLevel -> String -> String)
-         Output
-
-data Output
-  = Stdout
-  | File FilePath
+         Handle
 
 data LogLevel
   = Debug
@@ -33,16 +32,22 @@ instance FromJSON LogLevel
 
 instance ToJSON LogLevel
 
-createLogger :: String -> LogLevel -> Logger
-createLogger out loggerLevel = Logger logger stream
+initLogger :: String -> LogLevel -> IO (Either String Logger)
+initLogger "STDOUT" logLvl = return . Right $ createLogger stdout logLvl
+initLogger path logLvl = io `catch` handler
+  where
+    handler :: IOError -> IO (Either String Logger)
+    handler e = return $ Left $ show e
+    io = do
+      h <- openFile path AppendMode
+      return $ Right $ createLogger h logLvl
+
+createLogger :: Handle -> LogLevel -> Logger
+createLogger out loggerLevel = Logger logger out
   where
     logger logLevel message
       | logLevel >= loggerLevel = show logLevel ++ message ++ "\n"
       | otherwise = []
-    stream
-      | out == "STDOUT" = Stdout
-      | otherwise = File out
 
 writeLog :: Logger -> LogLevel -> String -> IO ()
-writeLog (Logger lgr (File path)) lvl msg = appendFile path $ lgr lvl msg
-writeLog (Logger lgr Stdout) lvl msg      = putStr $ lgr lvl msg
+writeLog (Logger lgr handle) lvl msg = hPutStr handle $ lgr lvl msg
