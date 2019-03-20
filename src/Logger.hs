@@ -21,13 +21,13 @@ data Output
 data LogLevel
   = Debug
   | Warnings
-  | Info
+  | Errors
   deriving (Eq, Ord, Generic)
 
 instance Show LogLevel where
   show Debug    = "[DEBUG]: "
   show Warnings = "[WARNING]: "
-  show Info     = "[INFO]: "
+  show Errors     = "[ERROR]: "
 
 instance FromJSON LogLevel
 
