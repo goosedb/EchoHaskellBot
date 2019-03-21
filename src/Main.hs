@@ -5,9 +5,9 @@ module Main where
 import           Config
 import           Data.Text
 import           Logger
-import           State
+import           Model
 import           System.Environment
-import Telegram as T
+import           Telegram           as T
 
 main :: IO ()
 main = getArgs >>= processArgs >>= runMainLoop
@@ -21,8 +21,7 @@ runMainLoop (Left msg) = putStrLn msg
 runMainLoop (Right config) = logger >>= run
   where
     logger = initLogger (unpack $ logStream config) (logLevel config)
-    run (Right logger) = T.run $ stateFromConfig logger config
+    run (Right logger) = T.run $ modelFromConfig logger config
     run (Left a)       = runMainLoop $ Left a
-
 
 help = "Ы?)"

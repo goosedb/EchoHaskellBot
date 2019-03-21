@@ -4,3 +4,4 @@ packages:
 extra-deps:
 - req-2.0.1
 - retry-0.8.0.0
+- http-client-0.6.2

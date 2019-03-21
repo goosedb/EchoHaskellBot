@@ -1,17 +1,17 @@
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE OverloadedStrings #-}
 
-module State where
+module Model where
 
 import           Config              as Cfg
-import           Data.Text
-import           Data.Text
+import           Data.Text           as Text
 import           Data.Text.Encoding
 import           GHC.Generics
 import           Logger
 import qualified Network.HTTP.Client as Http
 import qualified Network.HTTP.Req    as Req
 
-data State = State
+data Model = Model
   { token         :: !Text
   , httpConfig    :: !Req.HttpConfig
   , logger        :: !Logger
@@ -20,15 +20,15 @@ data State = State
   , offset        :: !Int
   } deriving (Generic)
 
-stateFromConfig :: Logger -> Config -> State
-stateFromConfig logger config =
-  State
-    (Cfg.token config)
+modelFromConfig :: Logger -> Config -> Model
+modelFromConfig logger config =
+  Model
+    (Text.concat ["bot", Cfg.token config])
     (createHttpConfig $ Cfg.proxy config)
     logger
     (Cfg.helpMessage config)
     (Cfg.repeatsNumber config)
-    0
+    (-1)
 
 createHttpConfig :: Maybe Proxy -> Req.HttpConfig
 createHttpConfig proxy = addProxy proxy $ Req.defaultHttpConfig
@@ -38,4 +38,5 @@ createHttpConfig proxy = addProxy proxy $ Req.defaultHttpConfig
       cfg
         { Req.httpConfigProxy =
             Just $ Http.Proxy (encodeUtf8 $ Cfg.host p) (Cfg.port p)
+        , Req.httpConfigCheckResponse = \_ _ _ -> Nothing
         }

@@ -3,7 +3,7 @@
 module Logger
   ( initLogger
   , writeLog
-  , LogLevel
+  , LogLevel(..)
   , Logger
   ) where
 
@@ -24,9 +24,9 @@ data LogLevel
   deriving (Eq, Ord, Generic)
 
 instance Show LogLevel where
-  show Debug    = "[DEBUG]: "
+  show Debug    = "[ DEBUG ]: "
   show Warnings = "[WARNING]: "
-  show Errors   = "[ERROR]: "
+  show Errors   = "[ ERROR ]: "
 
 instance FromJSON LogLevel
 
@@ -49,5 +49,5 @@ createLogger out loggerLevel = Logger logger out
       | logLevel >= loggerLevel = show logLevel ++ message ++ "\n"
       | otherwise = []
 
-writeLog :: Logger -> LogLevel -> String -> IO ()
-writeLog (Logger lgr handle) lvl msg = hPutStr handle $ lgr lvl msg
+writeLog :: Logger -> (LogLevel, String) -> IO ()
+writeLog (Logger lgr handle) (lvl, msg) = hPutStr handle $ lgr lvl msg

@@ -13,8 +13,9 @@ dependencies:
 - req >= 2.0.1
 - aeson
 - text
-- http-client
+- http-client >= 0.6.1
 - bytestring
+- aeson-casing
 
 
 executables:
