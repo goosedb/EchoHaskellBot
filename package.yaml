@@ -16,6 +16,7 @@ dependencies:
 - http-client >= 0.6.1
 - bytestring
 - aeson-casing
+- http-api-data
 
 
 executables:

@@ -5,9 +5,12 @@ module Main where
 import           Config
 import           Data.Text
 import           Logger
-import           Model
+
+import           Bot
+
+--import           Model
 import           System.Environment
-import           Telegram           as T
+import qualified Telegram.Bot       as T
 
 main :: IO ()
 main = getArgs >>= processArgs >>= runMainLoop
@@ -18,10 +21,12 @@ processArgs (configPath:_) = loadConfig configPath
 
 runMainLoop :: Either String Config -> IO ()
 runMainLoop (Left msg) = putStrLn msg
-runMainLoop (Right config) = logger >>= run
+runMainLoop (Right config) = logger >>= run (service config) config
   where
     logger = initLogger (unpack $ logStream config) (logLevel config)
-    run (Right logger) = T.run $ modelFromConfig logger config
-    run (Left a)       = runMainLoop $ Left a
+    run :: Service -> Config -> Either String Logger -> IO ()
+    run Telegram cfg (Right logger) =
+      runBot $ prepareModel T.Telegram logger cfg
+    run _ _ (Left a) = runMainLoop $ Left a
 
 help = "Ы?)"

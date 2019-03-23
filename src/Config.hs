@@ -8,7 +8,6 @@ import           Data.Aeson.Casing
 import           Data.Text
 import           GHC.Generics
 import           Logger
-import           Service
 
 data Proxy = Proxy
   { host :: !Text
@@ -19,14 +18,23 @@ instance FromJSON Proxy
 
 instance ToJSON Proxy
 
+data Service
+  = Telegram
+  | Slack
+  deriving (Show, Generic)
+
+instance FromJSON Service
+
+instance ToJSON Service
+
 data Config = Config
-  { token         :: !Text
-  , proxy         :: !(Maybe Proxy)
-  , logLevel      :: !LogLevel
-  , service       :: !Service
-  , helpMessage   :: !Text
-  , repeatsNumber :: !Int
-  , logStream     :: !Text
+  { token            :: !Text
+  , proxy            :: !(Maybe Proxy)
+  , logLevel         :: !LogLevel
+  , service          :: !Service
+  , helpMessage      :: !Text
+  , defRepeatsNumber :: !Int
+  , logStream        :: !Text
   } deriving (Show, Generic)
 
 instance FromJSON Config where

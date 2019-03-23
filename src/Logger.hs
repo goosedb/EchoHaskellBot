@@ -5,6 +5,7 @@ module Logger
   , writeLog
   , LogLevel(..)
   , Logger
+  , LogWriter
   ) where
 
 import           Control.Exception
@@ -16,6 +17,8 @@ import           System.IO
 data Logger =
   Logger (LogLevel -> String -> String)
          Handle
+
+type LogWriter = (LogLevel, String) -> IO ()
 
 data LogLevel
   = Debug

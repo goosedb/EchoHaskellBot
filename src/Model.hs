@@ -11,24 +11,23 @@ import           Logger
 import qualified Network.HTTP.Client as Http
 import qualified Network.HTTP.Req    as Req
 
-data Model = Model
-  { token         :: !Text
-  , httpConfig    :: !Req.HttpConfig
-  , logger        :: !Logger
-  , helpMessage   :: !Text
-  , repeatsNumber :: !Int
-  , offset        :: !Int
+type UserStates = [UserState]
+
+data Model service = Model
+  { service          :: service
+  , token            :: !Text
+  , httpConfig       :: !Req.HttpConfig
+  , logWriter        :: !LogWriter
+  , helpMessage      :: !Text
+  , defRepeatsNumber :: !Int
+  , offset           :: !Int
+  , state            :: ![UserState]
   } deriving (Generic)
 
-modelFromConfig :: Logger -> Config -> Model
-modelFromConfig logger config =
-  Model
-    (Text.concat ["bot", Cfg.token config])
-    (createHttpConfig $ Cfg.proxy config)
-    logger
-    (Cfg.helpMessage config)
-    (Cfg.repeatsNumber config)
-    (-1)
+data UserState = UserState
+  { chatId        :: Int
+  , repeatsNumber :: Int
+  }
 
 createHttpConfig :: Maybe Proxy -> Req.HttpConfig
 createHttpConfig proxy = addProxy proxy $ Req.defaultHttpConfig
