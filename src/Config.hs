@@ -1,5 +1,4 @@
-{-# LANGUAGE DeriveGeneric     #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 module Config where
 
@@ -38,10 +37,10 @@ data Config = Config
   } deriving (Show, Generic)
 
 instance FromJSON Config where
-  parseJSON = genericParseJSON $ aesonDrop 0 $ snakeCase
+  parseJSON = genericParseJSON $ aesonDrop 0 snakeCase
 
 instance ToJSON Config where
-  toJSON = genericToJSON $ aesonDrop 0 $ snakeCase
+  toJSON = genericToJSON $ aesonDrop 0 snakeCase
 
 loadConfig :: FilePath -> IO (Either String Config)
 loadConfig = eitherDecodeFileStrict

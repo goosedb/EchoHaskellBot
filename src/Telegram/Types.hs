@@ -13,17 +13,18 @@ data Update = Update
   } deriving (Generic, Show)
 
 instance FromJSON Update where
-  parseJSON = genericParseJSON $ aesonDrop 0 $ snakeCase
+  parseJSON = genericParseJSON $ aesonDrop 0 snakeCase
 
 data Message = Message
   { messageId :: !Int
   , date      :: !Integer
   , text      :: !Text
   , chat      :: !Chat
+  , user      :: !(Maybe User)
   } deriving (Generic, Show)
 
 instance FromJSON Message where
-  parseJSON = genericParseJSON $ aesonDrop 0 $ snakeCase
+  parseJSON = genericParseJSON $ aesonDrop 0 snakeCase
 
 data Chat = Chat
   { chatId   :: !Int
@@ -31,7 +32,7 @@ data Chat = Chat
   } deriving (Generic, Show)
 
 instance FromJSON Chat where
-  parseJSON = genericParseJSON $ aesonPrefix $ snakeCase
+  parseJSON = genericParseJSON $ aesonPrefix snakeCase
 
 data User = User
   { userId    :: !Int
@@ -41,7 +42,7 @@ data User = User
   } deriving (Generic, Show)
 
 instance FromJSON User where
-  parseJSON = genericParseJSON $ aesonDrop 0 $ snakeCase
+  parseJSON = genericParseJSON $ aesonDrop 0 snakeCase
 
 data Response = Response
   { ok          :: !Bool
@@ -50,4 +51,4 @@ data Response = Response
   } deriving (Generic, Show)
 
 instance FromJSON Response where
-  parseJSON = genericParseJSON $ aesonDrop 0 $ snakeCase
+  parseJSON = genericParseJSON $ aesonDrop 0 snakeCase

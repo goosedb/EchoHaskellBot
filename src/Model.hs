@@ -1,5 +1,4 @@
-{-# LANGUAGE DeriveGeneric     #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 module Model where
 
@@ -14,7 +13,7 @@ import qualified Network.HTTP.Req    as Req
 type UserStates = [UserState]
 
 data Model service = Model
-  { service          :: service
+  { service          :: !service
   , token            :: !Text
   , httpConfig       :: !Req.HttpConfig
   , logWriter        :: !LogWriter
@@ -25,12 +24,12 @@ data Model service = Model
   } deriving (Generic)
 
 data UserState = UserState
-  { chatId        :: Int
-  , repeatsNumber :: Int
+  { id     :: !Int
+  , repNum :: !Int
   }
 
 createHttpConfig :: Maybe Proxy -> Req.HttpConfig
-createHttpConfig proxy = addProxy proxy $ Req.defaultHttpConfig
+createHttpConfig proxy = addProxy proxy Req.defaultHttpConfig
   where
     addProxy Nothing cfg = cfg
     addProxy (Just p) cfg =
