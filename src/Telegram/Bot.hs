@@ -55,16 +55,16 @@ postAnswers Model {token, httpConfig} msgs = runReq httpConfig postReq
 logResponse :: ModelTG -> RespOrErr -> IO ()
 logResponse Model {logWriter = write} = write . wrLog
   where
+    wrLog (Left err) = (Errors, err)
     wrLog (Right (Response True [] _)) = (Debug, msg)
       where
-        msg = "Server sent updates. There are no updates."
+        msg = "Server sent a response. There are no updates."
     wrLog (Right (Response True upds _)) = (Debug, msg)
       where
         msg = "Server sent updates. Got " ++ (show . length) upds ++ " updates."
     wrLog (Right (Response False _ describe)) = (Warnings, msg)
       where
         msg = "Server sent an error. " ++ fromMaybe "" describe
-    wrLog (Left err) = (Errors, err)
 
 logStart :: ModelTG -> IO ()
 logStart Model {logWriter = write} = write (Debug, "Get request are sending...")
