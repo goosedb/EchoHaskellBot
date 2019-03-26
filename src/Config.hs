@@ -5,26 +5,12 @@ module Config where
 import           Data.Aeson
 import           Data.Aeson.Casing
 import           Data.Text
+import           Data.Text.Encoding
 import           GHC.Generics
 import           Logger
-
-data Proxy = Proxy
-  { host :: !Text
-  , port :: !Int
-  } deriving (Show, Generic)
-
-instance FromJSON Proxy
-
-instance ToJSON Proxy
-
-data Service
-  = Telegram
-  | Slack
-  deriving (Show, Generic)
-
-instance FromJSON Service
-
-instance ToJSON Service
+import qualified Network.HTTP.Client as Http
+import           Network.HTTP.Req    hiding (port)
+import           Types
 
 data Config = Config
   { token            :: !Text
@@ -44,3 +30,13 @@ instance ToJSON Config where
 
 loadConfig :: FilePath -> IO (Either String Config)
 loadConfig = eitherDecodeFileStrict
+
+createHttpConfig :: Maybe Proxy -> HttpConfig
+createHttpConfig = addProxy
+  where
+    addProxy Nothing = defaultHttpConfig
+    addProxy (Just p) =
+      defaultHttpConfig
+        { httpConfigProxy = Just $ Http.Proxy (encodeUtf8 $ host p) (port p)
+        , httpConfigCheckResponse = \_ _ _ -> Nothing
+        }

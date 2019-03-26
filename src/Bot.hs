@@ -1,14 +1,15 @@
+{-# LANGUAGE DataKinds      #-}
+{-# LANGUAGE KindSignatures #-}
+
 module Bot where
 
 import           Config
 import           Data.Aeson
-import           Data.Text.Encoding
 import           GHC.Generics
 import           Logger
 import           Model
-import           Network.HTTP.Client
-import           Network.HTTP.Req
+import           Types
 
-class Bot service where
-  prepareModel :: service -> Logger -> Config -> Model service
-  runBot :: Model service -> IO ()
+class Bot (s :: Service) where
+  prepareModel :: Logger -> Config -> Model s
+  runBot :: Model s -> IO ()
