@@ -27,7 +27,7 @@ runMainLoop (Right config) = logger >>= run (service config) config
     logger = initLogger (unpack $ logStream config) (logLevel config)
     run :: Service -> Config -> Either String Logger -> IO ()
     run Telegram cfg (Right logger) =
-      runBot $ (prepareModel logger cfg :: Model Telegram)
+      runBot (prepareModel logger cfg :: Model Telegram)
     run _ _ (Left err) = runMainLoop $ Left err
 
 help = "Ы?)"

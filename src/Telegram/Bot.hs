@@ -67,7 +67,7 @@ logResponse Model {logWriter = write} = write . wrLog
         msg = "Server sent an error. " ++ fromMaybe "" describe
 
 logStart :: ModelTG -> IO ()
-logStart Model {logWriter = write} = write (Debug, "Get request are sending...")
+logStart Model {logWriter = write} = write (Debug, "Requesting updates...")
 
 {--==== Utils ====--}
 updateOffset :: RespOrErr -> ModelTG -> ModelTG
