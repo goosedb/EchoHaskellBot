@@ -26,9 +26,6 @@ data UserState = UserState
   , dialogState :: !DialogState
   } deriving (Show)
 
-instance Eq UserState where
-  (UserState id1 _ _) == (UserState id2 _ _) = id1 == id2
-
 type UserStates = [UserState]
 
 data Proxy = Proxy
