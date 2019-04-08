@@ -2,7 +2,7 @@
 
 module Logger
   ( initLogger
-  , writeLog
+  , createWriter
   , LogLevel(..)
   , Logger
   , LogWriter
@@ -37,7 +37,7 @@ instance FromJSON LogLevel
 instance ToJSON LogLevel
 
 initLogger :: FilePath -> LogLevel -> IO LoggerOrError
-initLogger "STDOUT" logLvl = return . Right $ createLogger stdout logLvl
+initLogger "STDOUT" logLvl = return . pure $ createLogger stdout logLvl
 initLogger path logLvl = io `catch` handler
   where
     handler :: IOError -> IO LoggerOrError
@@ -46,8 +46,8 @@ initLogger path logLvl = io `catch` handler
       h <- openFile path AppendMode
       return . Right $ createLogger h logLvl
 
-writeLog :: Logger -> (LogLevel, String) -> IO ()
-writeLog (Logger lgr handle) (lvl, msg) = hPutStr handle $ lgr lvl msg
+createWriter :: Logger -> LogWriter
+createWriter (Logger lgr handle) (lvl, msg) = hPutStr handle $ lgr lvl msg
 
 createLogger :: Handle -> LogLevel -> Logger
 createLogger out loggerLevel = Logger logger out

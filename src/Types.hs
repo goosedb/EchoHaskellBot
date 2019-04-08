@@ -18,12 +18,13 @@ instance ToJSON Service
 data DialogState
   = Question
   | Common
+  deriving (Show)
 
 data UserState = UserState
   { stateId     :: !Int
   , repNum      :: !Int
   , dialogState :: !DialogState
-  }
+  } deriving (Show)
 
 instance Eq UserState where
   (UserState id1 _ _) == (UserState id2 _ _) = id1 == id2

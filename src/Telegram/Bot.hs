@@ -6,7 +6,9 @@ module Telegram.Bot where
 
 import           Bot
 import qualified Config                     as Cfg
-import           Control.Monad.State.Strict
+import           Control.Monad.Trans.Reader
+import           Control.Monad.Trans.State
+import           Control.Monad.Writer
 import           Data.Aeson
 import qualified Data.ByteString            as BS
 import           Data.List
@@ -17,7 +19,8 @@ import           Model                      as Mdl
 import qualified Network.HTTP.Client        as Cl
 import           Network.HTTP.Req           as Req
 import           Telegram.Types
-import           Types                      (Service (..))
+import           Types                      (Service (..), UserState,
+                                             UserStates)
 
 type ModelTG = Mdl.Model 'Telegram
 
@@ -31,7 +34,19 @@ instance Bot 'Telegram where
     logStart model
     response <- getUpdates model
     logResponse model response
+    when
+      (isRight response)
+      (do let resp = fromRight response
+          let ((messages, (model', _)), log) =
+                runWriter $ runStateT processResponse (model, resp)
+          postAnswers model' messages
+          return ())
     runBot $ updateOffset response model
+
+fromRight (Right a) = a
+
+isRight (Right _) = True
+isRight (Left _)  = False
 
 {--==== Http requests ====--}
 getUpdates :: ModelTG -> IO RespOrErr
@@ -50,6 +65,43 @@ postAnswers Model {token, httpConfig} msgs = runReq httpConfig postReq
     postReq = do
       n <- mapM (req POST url NoReqBody ignoreResponse) msgs
       return $ length n
+
+processResponse :: StateT (ModelTG, Response) (Writer [String]) [Param]
+processResponse = do
+  isOk <- gets (ok . snd)
+  if not isOk
+    then do
+      descOfErr <- gets (description . snd)
+      tell $ ["Received not-ok response. " <> (fromMaybe "" descOfErr)]
+      return []
+    else do
+      (states, resp) <- get
+      let (messages, (newStates, _)) =
+            runState processUpdates (states, result resp)
+      put (newStates, resp)
+      return messages
+
+processUpdates :: State (ModelTG, [Update]) [Param]
+processUpdates = do
+  upds <- gets snd
+  if not $ null upds
+    then do
+      (states, _) <- get
+      let (u:us) = upds
+      let (message, (states', _)) = runState generateMessage (states, u)
+      put (states', us)
+      others <- processUpdates
+      return $ message : others
+    else return []
+
+generateMessage :: State (ModelTG, Update) Param
+generateMessage = do
+  message <- gets (message . snd)
+  if isJust message
+    then do
+      let msg = fromJust message
+      return $ "chat_id" =: (chatId . chat $ msg) <> "text" =: (text msg)
+    else return mempty
 
 {--==== Logging ====--}
 logResponse :: ModelTG -> RespOrErr -> IO ()
@@ -80,7 +132,7 @@ modelForTelegram lggr cfg =
     Telegram
     (T.concat ["bot", Cfg.token cfg])
     (Cfg.createHttpConfig $ Cfg.proxy cfg)
-    (writeLog lggr)
+    (createWriter lggr)
     (Cfg.helpMessage cfg)
     (Cfg.defRepeatsNumber cfg)
     0

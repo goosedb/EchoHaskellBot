@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 6454156bbb76d60e7c8cfad15dfb6f282940790edce1a9d25fe49ce0b83432b4
+-- hash: 1f741a26dec9a9210ccc5c3897634530b1a8db1ac025e4647f07f945db283df7
 
 name:           EchoBot
 version:        0.1.0.0
@@ -30,6 +30,7 @@ executable EchoBot-exe
       Model
       Telegram.Bot
       Telegram.Types
+      Transf
       Types
       Paths_EchoBot
   hs-source-dirs:
@@ -45,6 +46,7 @@ executable EchoBot-exe
     , mtl
     , req >=2.0.1
     , text
+    , transformers >=0.5.6.2
   default-language: Haskell2010
 
 test-suite EchoBot-test
@@ -65,4 +67,5 @@ test-suite EchoBot-test
     , mtl
     , req >=2.0.1
     , text
+    , transformers >=0.5.6.2
   default-language: Haskell2010
