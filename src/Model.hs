@@ -26,15 +26,15 @@ modelFromConfig sd cfg logger =
     sd
     (token cfg)
     (createWriter logger)
-    ((mbproxy >>= \p ->
-        return $ HTTP.Proxy (encodeUtf8 $ Config.host p) (Config.port p)))
+    (mbproxy >>= \p ->
+        return $ HTTP.Proxy (encodeUtf8 $ Config.host p) (Config.port p))
     (DefaultSettings
        (defRepeatsNumber cfg)
        (helpMessage cfg)
        (repeatMessage cfg))
     []
   where
-    mbproxy = Config.proxy $ cfg
+    mbproxy = Config.proxy cfg
 
 data Model a = Model
   { serviceData  :: !a

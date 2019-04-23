@@ -34,7 +34,7 @@ newKeyboardMessage id =
 
 defUrl :: TGModel -> String -> String
 defUrl model =
-  (("https://api.telegram.org/bot" <> (unpack $ serviceToken model)) <>)
+  (("https://api.telegram.org/bot" <> unpack (serviceToken model)) <>)
 
 updateStates :: UserState -> (GetUpdate, TGModel) -> (GetUpdate, TGModel)
 updateStates uState (upd, mdl@Model {userStates}) =
@@ -56,3 +56,6 @@ parseCallbackData text Model {defSettings}
       []       -> numOfRep defSettings
       [(n, _)] -> n
   | otherwise = numOfRep defSettings
+
+logProcess :: TGModel -> [Log] -> IO ()
+logProcess Model {writeLog} = mapM_ writeLog

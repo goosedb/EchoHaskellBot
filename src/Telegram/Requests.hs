@@ -3,7 +3,6 @@
 
 module Telegram.Requests where
 
-import           Control.Monad
 import           Control.Monad.Reader
 import           Data.ByteString.Char8 (pack)
 import           Data.Maybe
@@ -19,7 +18,7 @@ getUpdates = do
   let write = writeLog model
   lift $ write (Info, "Requesting for updates..")
   url <- parseRequest $ defUrl model "/getUpdates"
-  let offset' = (offset . serviceData $ model)
+  let offset' = offset . serviceData $ model
   let request =
         setRequestMethod "GET" $
         setRequestQueryString [("offset", Just $ pack $ show offset')] $
@@ -31,7 +30,7 @@ sendMessages :: [MessageToSend] -> TGRequest ()
 sendMessages msgs = do
   model <- ask
   let write = writeLog model
-  when (not $ null msgs) (lift $ write (Info, "Sending answers.."))
+  unless (null msgs) (lift $ write (Info, "Sending answers.."))
   url <- parseRequest $ defUrl model "/sendMessage"
   let buildRequest m =
         setRequestMethod "POST" $
@@ -43,7 +42,7 @@ sendMessages msgs = do
   return ()
   where
     descs :: [TGResponse Message] -> String
-    descs = concat . map (fromMaybe "" . responseDescription)
+    descs = concatMap (fromMaybe "" . responseDescription)
     logFeedback _ [] = return ()
     logFeedback write bs =
       let notOkResp = filter (not . responseOk) bs

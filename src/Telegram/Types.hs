@@ -9,10 +9,8 @@ import           Data.Aeson
 import           Data.Aeson.Casing
 import           Data.ByteString.Lazy.Char8 as BS
 import           Data.Text
-import           Data.Text.Encoding
 import           GHC.Generics
 import           Model
-import           Network.HTTP.Simple        (JSONException, Proxy)
 
 type TGRequest r = Request TGModel r
 

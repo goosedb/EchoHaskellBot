@@ -4,35 +4,23 @@
 {-# LANGUAGE OverloadedStrings    #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 
-module Telegram.Bot where
+module Telegram.Bot (bot, tgModelFromConfig) where
 
 import           Bot
-import           Control.Monad.IO.Class
 import           Control.Monad.Reader
 import           Control.Monad.State
 import           Control.Monad.Writer
-import           Data.Aeson
-import           Data.Aeson.Text
 import           Data.List
 import           Data.Maybe
 import qualified Data.Text                   as T
-import qualified Data.Text.Lazy              as LT
 import           Logger
 import           Model
-import           Telegram.Logging
-
-import           Data.Aeson
-import           Model
-import           Network.HTTP.Client.Conduit
-import           Network.HTTP.Conduit
-import           Network.HTTP.Simple         as S
 import           Telegram.Requests
-import           Telegram.Types              as TGT
-import           Telegram.Types
+import           Telegram.Types              
 import           Telegram.Utils
 
 runRequest :: TGRequest r -> TGModel -> IO r
-runRequest request env = runReaderT request env
+runRequest = runReaderT 
 
 runProcess :: Process s r -> s -> (r, s, [Log])
 runProcess process state =
@@ -116,8 +104,8 @@ processUpdate = do
   (upd, model) <- get
   let cb = getUpdateCallbackQuery upd
   let msg = getUpdateMessage upd
-  if | isJust $ cb -> processCallback
-     | isJust $ msg -> processMessage
+  if | isJust cb -> processCallback
+     | isJust msg -> processMessage
      | otherwise ->
        do tell $ pure (Debug, "Empty update.")
           return []
@@ -135,7 +123,7 @@ processCallback = do
   model <- gets snd
   tell $ pure (Debug, "New states" <> show (userStates model))
   if | (isJust $ callbackQueryMessage cb) ->
-       do let id = (chatId $ messageChat $ fromJust $ callbackQueryMessage cb)
+       do let id = chatId $ messageChat $ fromJust $ callbackQueryMessage cb
           return $ pure $ newPlainMessage id $ cbMsg newNumOfRep
      | otherwise -> return []
   where
@@ -156,7 +144,7 @@ processMessage = do
 command :: Process (GetUpdate, TGModel) [MessageToSend]
 command = do
   msg <- gets (fromJust . getUpdateMessage . fst)
-  let text = messageText $ msg
+  let text = messageText msg
   model <- gets snd
   let id = chatId $ messageChat msg
   tell $ pure (Debug, "Command: " <> T.unpack text)
@@ -166,7 +154,7 @@ command = do
       return $ pure $ newPlainMessage id msg
     "/repeat" -> do
       let msg = newKeyboardMessage id
-      return $ pure $ msg
+      return $ pure msg
     _ -> return $ pure $ newPlainMessage id errMsg
   where
     errMsg = "There is no such command. Try /help or /repeat."
@@ -174,7 +162,7 @@ command = do
 plainMessage :: Process (GetUpdate, TGModel) [MessageToSend]
 plainMessage = do
   msg <- gets (fromJust . getUpdateMessage . fst)
-  let text = messageText $ msg
+  let text = messageText msg
   model <- gets snd
   let defSet = defSettings model
   let id = chatId $ messageChat msg

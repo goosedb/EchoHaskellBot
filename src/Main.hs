@@ -4,15 +4,11 @@ module Main where
 
 import           Bot
 import           Config
-import           Control.Monad
 import           Data.Text
 import           Logger
-import           Model
 import           System.Environment
 import           Telegram.Bot
-import           Telegram.Utils
 import           VKontakte.Bot
-import           VKontakte.Utils
 
 main :: IO ()
 main = getArgs >>= processArgs >>= run
