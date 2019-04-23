@@ -3,7 +3,7 @@
 
 module Telegram.Utils where
 
-import           Data.Text as T
+import           Data.Text      as T
 import           Logger
 import           Model
 import           Telegram.Types
@@ -36,7 +36,7 @@ defUrl :: TGModel -> String -> String
 defUrl model =
   (("https://api.telegram.org/bot" <> unpack (serviceToken model)) <>)
 
-updateStates :: UserState -> (GetUpdate, TGModel) -> (GetUpdate, TGModel)
+updateStates :: UserState -> (Update, TGModel) -> (Update, TGModel)
 updateStates uState (upd, mdl@Model {userStates}) =
   (upd, mdl {userStates = newStates})
   where
@@ -46,8 +46,8 @@ updateStates uState (upd, mdl@Model {userStates}) =
       | stateUserId u == stateUserId uState = uState : us
       | otherwise = u : helper us
 
-updateOffset :: TGModel -> GetUpdate -> TGModel
-updateOffset mdl upd = mdl {serviceData = TGData $ getUpdateId upd + 1}
+updateOffset :: TGModel -> Update -> TGModel
+updateOffset mdl upd = mdl {serviceData = TGData $ updateId upd + 1}
 
 parseCallbackData :: T.Text -> TGModel -> Int
 parseCallbackData text Model {defSettings}

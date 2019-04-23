@@ -29,23 +29,17 @@ data TGResponse result = TGResponse
 instance FromJSON r => FromJSON (TGResponse r) where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
 
-data GetUpdate = GetUpdate
-  { getUpdateId            :: !Int
-  , getUpdateMessage       :: !(Maybe Message)
-  , getUpdateCallbackQuery :: !(Maybe CallbackQuery)
+data Update = Update
+  { updateId            :: !Int
+  , updateMessage       :: !(Maybe Message)
+  , updateCallbackQuery :: !(Maybe CallbackQuery)
   } deriving (Generic, Show)
 
-instance FromJSON GetUpdate where
+instance FromJSON Update where
   parseJSON (Object u) =
-    GetUpdate <$> u .: "update_id" <*> u .:? "message" <*>
-    u .:? "callback_query"
+    Update <$> u .: "update_id" <*> u .:? "message" <*> u .:? "callback_query"
 
-data SendMessage = SendMessage
-  { sendMessageMessage :: !(Maybe Message)
-  } deriving (Generic, Show)
-
-instance FromJSON SendMessage where
-  parseJSON = genericParseJSON $ aesonDrop 11 snakeCase
+type Updates = [Update]
 
 data CallbackQuery = CallbackQuery
   { callbackQueryId      :: !Text

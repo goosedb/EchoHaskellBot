@@ -4,7 +4,10 @@
 {-# LANGUAGE OverloadedStrings    #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 
-module Telegram.Bot (bot, tgModelFromConfig) where
+module Telegram.Bot
+  ( bot
+  , tgModelFromConfig
+  ) where
 
 import           Bot
 import           Control.Monad.Reader
@@ -12,15 +15,15 @@ import           Control.Monad.State
 import           Control.Monad.Writer
 import           Data.List
 import           Data.Maybe
-import qualified Data.Text                   as T
+import qualified Data.Text            as T
 import           Logger
 import           Model
 import           Telegram.Requests
-import           Telegram.Types              
+import           Telegram.Types
 import           Telegram.Utils
 
 runRequest :: TGRequest r -> TGModel -> IO r
-runRequest = runReaderT 
+runRequest = runReaderT
 
 runProcess :: Process s r -> s -> (r, s, [Log])
 runProcess process state =
@@ -36,20 +39,19 @@ instance ServiceBot TGModel where
     lift $ runRequest (sendMessages msgs) model'
     put model'
 
-process ::
-     TGResponse [GetUpdate] -> TGModel -> (TGModel, [MessageToSend], [Log])
+process :: TGResponse Updates -> TGModel -> (TGModel, [MessageToSend], [Log])
 process resp model =
   let (msgs, (_, model'), log) = runProcess processResponse (resp, model)
    in (model', msgs, log)
 
 {-_ == Response == _-}
-processResponse :: Process (TGResponse [GetUpdate], TGModel) [MessageToSend]
+processResponse :: Process (TGResponse Updates, TGModel) [MessageToSend]
 processResponse = do
   isOk <- gets (responseOk . fst)
   if | isOk -> okResponse
      | otherwise -> notOkResponse
 
-okResponse :: Process (TGResponse [GetUpdate], TGModel) [MessageToSend]
+okResponse :: Process (TGResponse Updates, TGModel) [MessageToSend]
 okResponse = do
   upds <- gets (fromMaybe [] . responseResult . fst)
   tell $ pure (Info, "Got " <> show (length upds) <> " updates.")
@@ -60,7 +62,7 @@ okResponse = do
   modify (\(a, _) -> (a, model'))
   return msgs
 
-notOkResponse :: Process (TGResponse [GetUpdate], TGModel) [MessageToSend]
+notOkResponse :: Process (TGResponse Updates, TGModel) [MessageToSend]
 notOkResponse = do
   description <- gets (responseDescription . fst)
   tell $ pure $ notOkMsg description
@@ -71,7 +73,7 @@ notOkResponse = do
     notOkMsg d = (Warnings, notOkMsgHead <> notOkMsgDesc d <> ".")
 
 {-_ == Updates == _-}
-processUpdates :: Process ([GetUpdate], TGModel) [MessageToSend]
+processUpdates :: Process (Updates, TGModel) [MessageToSend]
 processUpdates = do
   upds <- gets fst
   model <- gets snd
@@ -80,7 +82,7 @@ processUpdates = do
     1 -> oneUpdate
     _ -> manyUpdates
 
-manyUpdates :: Process ([GetUpdate], TGModel) [MessageToSend]
+manyUpdates :: Process (Updates, TGModel) [MessageToSend]
 manyUpdates = do
   (upds, model) <- get
   let (u:us) = upds
@@ -90,7 +92,7 @@ manyUpdates = do
   msgs <- processUpdates
   return $ msg <> msgs
 
-oneUpdate :: Process ([GetUpdate], TGModel) [MessageToSend]
+oneUpdate :: Process (Updates, TGModel) [MessageToSend]
 oneUpdate = do
   (upds, model) <- get
   let [u] = upds
@@ -99,11 +101,11 @@ oneUpdate = do
   modify (\(a, b) -> (a, updateOffset model' u))
   return msg
 
-processUpdate :: Process (GetUpdate, TGModel) [MessageToSend]
+processUpdate :: Process (Update, TGModel) [MessageToSend]
 processUpdate = do
   (upd, model) <- get
-  let cb = getUpdateCallbackQuery upd
-  let msg = getUpdateMessage upd
+  let cb = updateCallbackQuery upd
+  let msg = updateMessage upd
   if | isJust cb -> processCallback
      | isJust msg -> processMessage
      | otherwise ->
@@ -111,9 +113,9 @@ processUpdate = do
           return []
 
 {-_ == Callback == _-}
-processCallback :: Process (GetUpdate, TGModel) [MessageToSend]
+processCallback :: Process (Update, TGModel) [MessageToSend]
 processCallback = do
-  cb <- gets (fromJust . getUpdateCallbackQuery . fst)
+  cb <- gets (fromJust . updateCallbackQuery . fst)
   model <- gets snd
   let newNumOfRep = parseCallbackData (callbackQueryData cb) model
   let usrId = userId $ callbackQueryFrom cb
@@ -131,19 +133,18 @@ processCallback = do
       "For user with id " <> show id <> " set " <> show n <> " repeats."
     cbMsg n = "Now I repeat your message " <> T.pack (show n) <> " times."
 
-
 {-_ == Message == _-}
-processMessage :: Process (GetUpdate, TGModel) [MessageToSend]
+processMessage :: Process (Update, TGModel) [MessageToSend]
 processMessage = do
-  msg <- gets (fromJust . getUpdateMessage . fst)
+  msg <- gets (fromJust . updateMessage . fst)
   model <- gets snd
   let text = messageText msg
   if | "/" `T.isPrefixOf` text -> command
      | otherwise -> plainMessage
 
-command :: Process (GetUpdate, TGModel) [MessageToSend]
+command :: Process (Update, TGModel) [MessageToSend]
 command = do
-  msg <- gets (fromJust . getUpdateMessage . fst)
+  msg <- gets (fromJust . updateMessage . fst)
   let text = messageText msg
   model <- gets snd
   let id = chatId $ messageChat msg
@@ -159,9 +160,9 @@ command = do
   where
     errMsg = "There is no such command. Try /help or /repeat."
 
-plainMessage :: Process (GetUpdate, TGModel) [MessageToSend]
+plainMessage :: Process (Update, TGModel) [MessageToSend]
 plainMessage = do
-  msg <- gets (fromJust . getUpdateMessage . fst)
+  msg <- gets (fromJust . updateMessage . fst)
   let text = messageText msg
   model <- gets snd
   let defSet = defSettings model

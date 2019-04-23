@@ -12,7 +12,7 @@ import           Network.HTTP.Simple
 import           Telegram.Types
 import           Telegram.Utils
 
-getUpdates :: TGRequest (TGResponse [GetUpdate])
+getUpdates :: TGRequest (TGResponse Updates)
 getUpdates = do
   model <- ask
   let write = writeLog model

@@ -27,7 +27,7 @@ modelFromConfig sd cfg logger =
     (token cfg)
     (createWriter logger)
     (mbproxy >>= \p ->
-        return $ HTTP.Proxy (encodeUtf8 $ Config.host p) (Config.port p))
+       return $ HTTP.Proxy (encodeUtf8 $ Config.host p) (Config.port p))
     (DefaultSettings
        (defRepeatsNumber cfg)
        (helpMessage cfg)

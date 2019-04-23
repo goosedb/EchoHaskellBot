@@ -1,7 +1,10 @@
 {-# LANGUAGE FlexibleInstances    #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 
-module VKontakte.Bot (bot, vkModelFromConfig) where
+module VKontakte.Bot
+  ( bot
+  , vkModelFromConfig
+  ) where
 
 import           Bot
 import           Control.Monad.IO.Class
