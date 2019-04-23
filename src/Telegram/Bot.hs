@@ -1,139 +1,190 @@
-{-# LANGUAGE DataKinds         #-}
-{-# LANGUAGE NamedFieldPuns    #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE MultiWayIf           #-}
+{-# LANGUAGE NamedFieldPuns       #-}
+{-# LANGUAGE OverloadedStrings    #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 
 module Telegram.Bot where
 
 import           Bot
-import qualified Config                     as Cfg
-import           Control.Monad.Trans.Reader
-import           Control.Monad.Trans.State
+import           Control.Monad.IO.Class
+import           Control.Monad.Reader
+import           Control.Monad.State
 import           Control.Monad.Writer
 import           Data.Aeson
-import qualified Data.ByteString            as BS
+import           Data.Aeson.Text
 import           Data.List
 import           Data.Maybe
-import qualified Data.Text                  as T
+import qualified Data.Text                   as T
+import qualified Data.Text.Lazy              as LT
 import           Logger
-import           Model                      as Mdl
-import qualified Network.HTTP.Client        as Cl
-import           Network.HTTP.Req           as Req
+import           Model
+import           Telegram.Logging
+
+import           Data.Aeson
+import           Model
+import           Network.HTTP.Client.Conduit
+import           Network.HTTP.Conduit
+import           Network.HTTP.Simple         as S
+import           Telegram.Requests
+import           Telegram.Types              as TGT
 import           Telegram.Types
-import           Types                      (Service (..), UserState,
-                                             UserStates)
+import           Telegram.Utils
 
-type ModelTG = Mdl.Model 'Telegram
+runRequest :: TGRequest r -> TGModel -> IO r
+runRequest request env = runReaderT request env
 
-type RespOrErr = Either String Response
+runProcess :: Process s r -> s -> (r, s, [Log])
+runProcess process state =
+  let ((a, s), w) = runWriter $ runStateT process state
+   in (a, s, w)
 
-type Param = Option 'Https
+instance ServiceBot TGModel where
+  bot = do
+    model <- get
+    result <- lift $ runRequest getUpdates model
+    let (model', msgs, log) = process result model
+    lift $ logProcess model' log
+    lift $ runRequest (sendMessages msgs) model'
+    put model'
 
-instance Bot 'Telegram where
-  prepareModel = modelForTelegram
-  runBot model = do
-    logStart model
-    response <- getUpdates model
-    logResponse model response
-    when
-      (isRight response)
-      (do let resp = fromRight response
-          let ((messages, (model', _)), log) =
-                runWriter $ runStateT processResponse (model, resp)
-          postAnswers model' messages
-          return ())
-    runBot $ updateOffset response model
+process ::
+     TGResponse [GetUpdate] -> TGModel -> (TGModel, [MessageToSend], [Log])
+process resp model =
+  let (msgs, (_, model'), log) = runProcess processResponse (resp, model)
+   in (model', msgs, log)
 
-fromRight (Right a) = a
-
-isRight (Right _) = True
-isRight (Left _)  = False
-
-{--==== Http requests ====--}
-getUpdates :: ModelTG -> IO RespOrErr
-getUpdates Model {token, offset, httpConfig} = runReq httpConfig getReq
-  where
-    url = https "api.telegram.org" /: token /: "getUpdates"
-    getReq = do
-      resp <- req GET url NoReqBody lbsResponse $ "offset" =: offset
-      return $ eitherDecode $ Req.responseBody resp
-
-postAnswers :: ModelTG -> [Param] -> IO Int
-postAnswers _ [] = return 0
-postAnswers Model {token, httpConfig} msgs = runReq httpConfig postReq
-  where
-    url = https "api.telegram.org" /: token /: "sendMessage"
-    postReq = do
-      n <- mapM (req POST url NoReqBody ignoreResponse) msgs
-      return $ length n
-
-processResponse :: StateT (ModelTG, Response) (Writer [String]) [Param]
+{-_ == Response == _-}
+processResponse :: Process (TGResponse [GetUpdate], TGModel) [MessageToSend]
 processResponse = do
-  isOk <- gets (ok . snd)
-  if not isOk
-    then do
-      descOfErr <- gets (description . snd)
-      tell $ ["Received not-ok response. " <> (fromMaybe "" descOfErr)]
-      return []
-    else do
-      (states, resp) <- get
-      let (messages, (newStates, _)) =
-            runState processUpdates (states, result resp)
-      put (newStates, resp)
-      return messages
+  isOk <- gets (responseOk . fst)
+  if | isOk -> okResponse
+     | otherwise -> notOkResponse
 
-processUpdates :: State (ModelTG, [Update]) [Param]
-processUpdates = do
-  upds <- gets snd
-  if not $ null upds
-    then do
-      (states, _) <- get
-      let (u:us) = upds
-      let (message, (states', _)) = runState generateMessage (states, u)
-      put (states', us)
-      others <- processUpdates
-      return $ message : others
-    else return []
+okResponse :: Process (TGResponse [GetUpdate], TGModel) [MessageToSend]
+okResponse = do
+  upds <- gets (fromMaybe [] . responseResult . fst)
+  tell $ pure (Info, "Got " <> show (length upds) <> " updates.")
+  model <- gets snd
+  let result = runProcess processUpdates (upds, model)
+  let (msgs, (_, model'), log) = result
+  tell log
+  modify (\(a, _) -> (a, model'))
+  return msgs
 
-generateMessage :: State (ModelTG, Update) Param
-generateMessage = do
-  message <- gets (message . snd)
-  if isJust message
-    then do
-      let msg = fromJust message
-      return $ "chat_id" =: (chatId . chat $ msg) <> "text" =: (text msg)
-    else return mempty
-
-{--==== Logging ====--}
-logResponse :: ModelTG -> RespOrErr -> IO ()
-logResponse Model {logWriter = write} = write . wrLog
+notOkResponse :: Process (TGResponse [GetUpdate], TGModel) [MessageToSend]
+notOkResponse = do
+  description <- gets (responseDescription . fst)
+  tell $ pure $ notOkMsg description
+  return []
   where
-    wrLog (Left err) = (Errors, err)
-    wrLog (Right (Response True [] _)) = (Debug, msg)
-      where
-        msg = "Server sent a response. There are no updates."
-    wrLog (Right (Response True upds _)) = (Debug, msg)
-      where
-        msg = "Server sent updates. Got " ++ (show . length) upds ++ " updates."
-    wrLog (Right (Response False _ describe)) = (Warnings, msg)
-      where
-        msg = "Server sent an error. " ++ fromMaybe "" describe
+    notOkMsgHead = "Server sent an error. Description: "
+    notOkMsgDesc = fromMaybe "no description"
+    notOkMsg d = (Warnings, notOkMsgHead <> notOkMsgDesc d <> ".")
 
-logStart :: ModelTG -> IO ()
-logStart Model {logWriter = write} = write (Debug, "Requesting updates...")
+{-_ == Updates == _-}
+processUpdates :: Process ([GetUpdate], TGModel) [MessageToSend]
+processUpdates = do
+  upds <- gets fst
+  model <- gets snd
+  case length upds of
+    0 -> return []
+    1 -> oneUpdate
+    _ -> manyUpdates
 
-{--==== Utils ====--}
-updateOffset :: RespOrErr -> ModelTG -> ModelTG
-updateOffset (Right Response {result = upds@(_:_)}) model =
-  model {offset = (updateId . last $ upds) + 1}
-updateOffset _ model = model
+manyUpdates :: Process ([GetUpdate], TGModel) [MessageToSend]
+manyUpdates = do
+  (upds, model) <- get
+  let (u:us) = upds
+  let (msg, (_, model'), log) = runProcess processUpdate (u, model)
+  tell log
+  put (us, model')
+  msgs <- processUpdates
+  return $ msg <> msgs
 
-modelForTelegram lggr cfg =
-  Mdl.Model
-    Telegram
-    (T.concat ["bot", Cfg.token cfg])
-    (Cfg.createHttpConfig $ Cfg.proxy cfg)
-    (createWriter lggr)
-    (Cfg.helpMessage cfg)
-    (Cfg.defRepeatsNumber cfg)
-    0
-    []
+oneUpdate :: Process ([GetUpdate], TGModel) [MessageToSend]
+oneUpdate = do
+  (upds, model) <- get
+  let [u] = upds
+  let (msg, (_, model'), log) = runProcess processUpdate (u, model)
+  tell log
+  modify (\(a, b) -> (a, updateOffset model' u))
+  return msg
+
+processUpdate :: Process (GetUpdate, TGModel) [MessageToSend]
+processUpdate = do
+  (upd, model) <- get
+  let cb = getUpdateCallbackQuery upd
+  let msg = getUpdateMessage upd
+  if | isJust $ cb -> processCallback
+     | isJust $ msg -> processMessage
+     | otherwise ->
+       do tell $ pure (Debug, "Empty update.")
+          return []
+
+{-_ == Callback == _-}
+processCallback :: Process (GetUpdate, TGModel) [MessageToSend]
+processCallback = do
+  cb <- gets (fromJust . getUpdateCallbackQuery . fst)
+  model <- gets snd
+  let newNumOfRep = parseCallbackData (callbackQueryData cb) model
+  let usrId = userId $ callbackQueryFrom cb
+  tell $ pure (Debug, cbLog usrId newNumOfRep)
+  let newState = UserState (userId . callbackQueryFrom $ cb) newNumOfRep
+  modify $ updateStates newState
+  model <- gets snd
+  tell $ pure (Debug, "New states" <> show (userStates model))
+  if | (isJust $ callbackQueryMessage cb) ->
+       do let id = (chatId $ messageChat $ fromJust $ callbackQueryMessage cb)
+          return $ pure $ newPlainMessage id $ cbMsg newNumOfRep
+     | otherwise -> return []
+  where
+    cbLog id n =
+      "For user with id " <> show id <> " set " <> show n <> " repeats."
+    cbMsg n = "Now I repeat your message " <> T.pack (show n) <> " times."
+
+
+{-_ == Message == _-}
+processMessage :: Process (GetUpdate, TGModel) [MessageToSend]
+processMessage = do
+  msg <- gets (fromJust . getUpdateMessage . fst)
+  model <- gets snd
+  let text = messageText msg
+  if | "/" `T.isPrefixOf` text -> command
+     | otherwise -> plainMessage
+
+command :: Process (GetUpdate, TGModel) [MessageToSend]
+command = do
+  msg <- gets (fromJust . getUpdateMessage . fst)
+  let text = messageText $ msg
+  model <- gets snd
+  let id = chatId $ messageChat msg
+  tell $ pure (Debug, "Command: " <> T.unpack text)
+  case text of
+    "/help" -> do
+      let msg = helpMsg . defSettings $ model
+      return $ pure $ newPlainMessage id msg
+    "/repeat" -> do
+      let msg = newKeyboardMessage id
+      return $ pure $ msg
+    _ -> return $ pure $ newPlainMessage id errMsg
+  where
+    errMsg = "There is no such command. Try /help or /repeat."
+
+plainMessage :: Process (GetUpdate, TGModel) [MessageToSend]
+plainMessage = do
+  msg <- gets (fromJust . getUpdateMessage . fst)
+  let text = messageText $ msg
+  model <- gets snd
+  let defSet = defSettings model
+  let id = chatId $ messageChat msg
+  let usrId = userId $ messageFrom msg
+  let state = fromMaybe (defState defSet) $ find (p usrId) (userStates model)
+  tell $ pure (Debug, "Message: " <> T.unpack text)
+  let msg = messageFromState id state text
+  return $ pure $ messageFromState id state text
+  where
+    messageFromState id UserState {stateNumOfRep = n} txt =
+      newPlainMessage id $ T.unlines $ replicate n txt
+    defState DefaultSettings {numOfRep} = UserState (-1) numOfRep
+    p id s2 = id == stateUserId s2
