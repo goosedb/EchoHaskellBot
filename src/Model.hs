@@ -3,7 +3,6 @@ module Model
   , DefaultSettings(..)
   , numOfRep
   , helpMsg
-  , repMsg
   , UserState(..)
   , UserStates
   {- Re-Exports from Config -}
@@ -30,8 +29,7 @@ modelFromConfig sd cfg logger =
        return $ HTTP.Proxy (encodeUtf8 $ Config.host p) (Config.port p))
     (DefaultSettings
        (defRepeatsNumber cfg)
-       (helpMessage cfg)
-       (repeatMessage cfg))
+       (helpMessage cfg))
     []
   where
     mbproxy = Config.proxy cfg
@@ -48,7 +46,6 @@ data Model a = Model
 data DefaultSettings = DefaultSettings
   { numOfRep :: !Int
   , helpMsg  :: !Text
-  , repMsg   :: !Text
   }
 
 type UserStates = [UserState]

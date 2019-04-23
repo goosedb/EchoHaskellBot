@@ -15,7 +15,6 @@ data Config = Config
   , service          :: !Service
   , logLevel         :: !LogLevel
   , helpMessage      :: !Text
-  , repeatMessage    :: !Text
   , defRepeatsNumber :: !Int
   , logStream        :: !Text
   } deriving (Show, Generic)

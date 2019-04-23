@@ -50,7 +50,7 @@ configScheme =
   \},\n\
   \\"token\": \"%token%\",\n\
   \\"service\": \"VKontakte | Telegram\",\n\
-  \\"log_level\": \"Debug | Errors | Warnings\",\n\
+  \\"log_level\": \"Debug | Info | Errors | Warnings\",\n\
   \\"log_stream\": \"STDOUT | %path_to_file%\",\n\
   \\"help_message\": \"foo\",\n\
   \\"repeat_message\": \"bar\",\n\
